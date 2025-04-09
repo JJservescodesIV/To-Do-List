@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>To-Do List App</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: Arial, sans-serif;
+        }
+        
+        body {
+            background-color: #f5f5f5;
+            padding: 20px;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        
+        h1 {
+            text-align: center;
+            margin-bottom: 20px;
+            color: #333;
+        }
+        
+        .todo-container {
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+        }
+        
+        .input-group {
+            display: flex;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+            gap: 10px;
+        }
+        
+        .input-row {
+            display: flex;
+            flex: 1;
+            min-width: 100%;
+        }
+        
+        #task-input {
+            flex: 1;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px 0 0 4px;
+            font-size: 16px;
+        }
+        
+        #add-button {
+            padding: 10px 15px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 0 4px 4px 0;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        
+        #add-button:hover {
+            background-color: #45a049;
+        }
+        
+        .priority-selector {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .priority-label {
+            font-size: 14px;
+        }
+        
+        #priority-select {
+            padding: 5px;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+        }
+        
+        ul {
+            list-style-type: none;
+        }
+        
+        li {
+            display: flex;
+            align-items: center;
+            padding: 10px 0;
+            border-bottom: 1px solid #eee;
+        }
+        
+        li:last-child {
+            border-bottom: none;
+        }
+        
+        .task-text {
+            flex: 1;
+            margin-left: 10px;
+        }
+        
+        .completed {
+            text-decoration: line-through;
+            color: #888;
+        }
+        
+        .delete-btn {
+            background-color: #f44336;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            padding: 5px 10px;
+            cursor: pointer;
+            margin-left: 10px;
+        }
+        
+        .delete-btn:hover {
+            background-color: #d32f2f;
+        }
+        
+        .empty-list {
+            text-align: center;
+            color: #888;
+            padding: 20px 0;
+        }
+        
+        .priority-tag {
+            font-size: 12px;
+            padding: 3px 6px;
+            border-radius: 3px;
+            margin-left: 10px;
+            font-weight: bold;
+        }
+        
+        .priority-low {
+            background-color: #8bc34a;
+            color: white;
+        }
+        
+        .priority-medium {
+            background-color: #ffc107;
+            color: #333;
+        }
+        
+        .priority-high {
+            background-color: #f44336;
+            color: white;
+        }
+        
+        .filter-container {
+            display: flex;
+            justify-content: flex-end;
+            margin-bottom: 15px;
+            gap: 10px;
+            align-items: center;
+        }
+        
+        .filter-label {
+            font-size: 14px;
+        }
+        
+        #filter-priority {
+            padding: 5px;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+        }
+        
+        @media (max-width: 480px) {
+            body {
+                padding: 10px;
+            }
+            
+            .todo-container {
+                padding: 15px;
+            }
+            
+            #task-input, #add-button {
+                font-size: 14px;
+                padding: 8px;
+            }
+            
+            .input-group {
+                flex-direction: column;
+            }
+            
+            .filter-container {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+        }
+    </style>
+</head>
+<body>
+    <h1>To-Do List</h1>
+    
+    <div class="todo-container">
+        <div class="input-group">
+            <div class="input-row">
+                <input type="text" id="task-input" placeholder="Add a new task...">
+                <button id="add-button">Add</button>
+            </div>
+            <div class="priority-selector">
+                <span class="priority-label">Priority:</span>
+                <select id="priority-select">
+                    <option value="low">Low</option>
+                    <option value="medium" selected>Medium</option>
+                    <option value="high">High</option>
+                </select>
+            </div>
+        </div>
+        
+        <div class="filter-container">
+            <span class="filter-label">Filter by priority:</span>
+            <select id="filter-priority">
+                <option value="all" selected>All</option>
+                <option value="low">Low</option>
+                <option value="medium">Medium</option>
+                <option value="high">High</option>
+            </select>
+        </div>
+        
+        <ul id="task-list">
+            <!-- Tasks will be added here dynamically -->
+        </ul>
+        
+        <div id="empty-message" class="empty-list">
+            No tasks yet. Add a task to get started!
+        </div>
+    </div>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const taskInput = document.getElementById('task-input');
+            const addButton = document.getElementById('add-button');
+            const taskList = document.getElementById('task-list');
+            const emptyMessage = document.getElementById('empty-message');
+            const prioritySelect = document.getElementById('priority-select');
+            const filterPriority = document.getElementById('filter-priority');
+            
+            // Load tasks from localStorage
+            loadTasks();
+            
+            // Add task when Add button is clicked
+            addButton.addEventListener('click', addTask);
+            
+            // Add task when Enter key is pressed
+            taskInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    addTask();
+                }
+            });
+            
+            // Filter tasks when priority filter changes
+            filterPriority.addEventListener('change', filterTasks);
+            
+            function addTask() {
+                const taskText = taskInput.value.trim();
+                
+                if (taskText === '') {
+                    return; // Don't add empty tasks
+                }
+                
+                // Create new task object
+                const task = {
+                    id: Date.now(), // Use timestamp as unique ID
+                    text: taskText,
+                    completed: false,
+                    priority: prioritySelect.value
+                };
+                
+                // Add to DOM
+                renderTask(task);
+                
+                // Clear input field
+                taskInput.value = '';
+                
+                // Focus on input field
+                taskInput.focus();
+                
+                // Save to localStorage
+                saveTasks();
+                
+                // Hide empty message
+                updateEmptyMessage();
+                
+                // Apply current filter
+                filterTasks();
+            }
+            
+            function renderTask(task) {
+                const li = document.createElement('li');
+                li.dataset.id = task.id;
+                li.dataset.priority = task.priority;
+                
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.checked = task.completed;
+                checkbox.addEventListener('change', function() {
+                    toggleTaskCompletion(task.id);
+                });
+                
+                const span = document.createElement('span');
+                span.className = 'task-text';
+                if (task.completed) {
+                    span.classList.add('completed');
+                }
+                span.textContent = task.text;
+                
+                const priorityTag = document.createElement('span');
+                priorityTag.className = `priority-tag priority-${task.priority}`;
+                priorityTag.textContent = task.priority.charAt(0).toUpperCase() + task.priority.slice(1);
+                
+                const deleteBtn = document.createElement('button');
+                deleteBtn.className = 'delete-btn';
+                deleteBtn.textContent = 'Delete';
+                deleteBtn.addEventListener('click', function() {
+                    deleteTask(task.id);
+                });
+                
+                li.appendChild(checkbox);
+                li.appendChild(span);
+                li.appendChild(priorityTag);
+                li.appendChild(deleteBtn);
+                
+                taskList.appendChild(li);
+            }
+            
+            function toggleTaskCompletion(id) {
+                const li = taskList.querySelector(`li[data-id="${id}"]`);
+                const span = li.querySelector('.task-text');
+                const checkbox = li.querySelector('input[type="checkbox"]');
+                
+                span.classList.toggle('completed', checkbox.checked);
+                
+                saveTasks();
+            }
+            
+            function deleteTask(id) {
+                const li = taskList.querySelector(`li[data-id="${id}"]`);
+                li.remove();
+                
+                saveTasks();
+                updateEmptyMessage();
+            }
+            
+            function saveTasks() {
+                const tasks = [];
+                
+                document.querySelectorAll('#task-list li').forEach(function(li) {
+                    const id = parseInt(li.dataset.id);
+                    const text = li.querySelector('.task-text').textContent;
+                    const completed = li.querySelector('input[type="checkbox"]').checked;
+                    const priority = li.dataset.priority;
+                    
+                    tasks.push({ id, text, completed, priority });
+                });
+                
+                localStorage.setItem('tasks', JSON.stringify(tasks));
+            }
+            
+            function loadTasks() {
+                const savedTasks = localStorage.getItem('tasks');
+                
+                if (savedTasks) {
+                    const tasks = JSON.parse(savedTasks);
+                    
+                    tasks.forEach(function(task) {
+                        renderTask(task);
+                    });
+                }
+                
+                updateEmptyMessage();
+            }
+            
+            function updateEmptyMessage() {
+                const visibleTasks = Array.from(taskList.children).filter(li => li.style.display !== 'none');
+                
+                if (visibleTasks.length > 0) {
+                    emptyMessage.style.display = 'none';
+                } else {
+                    emptyMessage.style.display = 'block';
+                }
+            }
+            
+            function filterTasks() {
+                const selectedPriority = filterPriority.value;
+                const tasks = taskList.querySelectorAll('li');
+                
+                tasks.forEach(function(task) {
+                    if (selectedPriority === 'all' || task.dataset.priority === selectedPriority) {
+                        task.style.display = '';
+                    } else {
+                        task.style.display = 'none';
+                    }
+                });
+                
+                updateEmptyMessage();
+            }
+        });
+    </script>
+</body>
+</html>
